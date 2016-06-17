@@ -13,17 +13,11 @@ import pytz
 
 from functools import partial
 
-from courseware.models import StudentModule
-
 from django.core.exceptions import PermissionDenied
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.conf import settings
 from django.template import Context, Template
-
-from student.models import user_by_anonymous_id
-from submissions import api as submissions_api
-from submissions.models import StudentItem as SubmissionsStudent
 
 from webob.response import Response
 
@@ -164,8 +158,8 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Get student's most recent submission.
         """
-        submissions = submissions_api.get_submissions(
-            self.student_submission_id(submission_id))
+        from submissions import api
+        submissions = api.get_submissions(self.student_submission_id(submission_id))
         if submissions:
             # If I understand docs correctly, most recent submission should
             # be first
@@ -175,9 +169,8 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Return student's current score.
         """
-        score = submissions_api.get_score(
-            self.student_submission_id(submission_id)
-        )
+        from submissions import api
+        score = api.get_score(self.student_submission_id(submission_id))
         if score:
             return score['points_earned']
 
@@ -275,6 +268,10 @@ class StaffGradedAssignmentXBlock(XBlock):
             annotated file name, student id and module id, this
             information will be used on grading screen
             """
+            from courseware.models import StudentModule
+            from submissions.models import StudentItem as SubmissionsStudent
+            from student.models import user_by_anonymous_id
+
             # Submissions doesn't have API for this, just use model directly.
             students = SubmissionsStudent.objects.filter(
                 course_id=self.course_id,
@@ -411,6 +408,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Save a students submission file.
         """
+        from submissions import api as submissions_api
         require(self.upload_allowed())
         upload = request.params['assignment']
         sha1 = _get_sha1(upload.file)
@@ -432,6 +430,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Save annotated assignment from staff.
         """
+        from courseware.models import StudentModule
         require(self.is_course_staff())
         upload = request.params['annotated']
         module = StudentModule.objects.get(pk=request.params['module_id'])
@@ -504,6 +503,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Return annotated assignment file requested by staff.
         """
+        from courseware.models import StudentModule
         require(self.is_course_staff())
         module = StudentModule.objects.get(pk=request.params['module_id'])
         state = json.loads(module.state)
@@ -560,6 +560,8 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Persist a score for a student given by staff.
         """
+        from courseware.models import StudentModule
+        from submissions import api as submissions_api
         require(self.is_course_staff())
         module = StudentModule.objects.get(pk=request.params['module_id'])
         state = json.loads(module.state)
@@ -587,6 +589,8 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Reset a students score request by staff.
         """
+        from submissions import api as submissions_api
+        from courseware.models import StudentModule
         require(self.is_course_staff())
         student_id = request.params['student_id']
         submissions_api.reset_score(student_id, self.course_id, self.block_id)
