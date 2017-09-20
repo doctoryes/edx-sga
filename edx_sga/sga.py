@@ -13,8 +13,6 @@ import pytz
 
 from functools import partial  # lint-amnesty, pylint: disable=wrong-import-order
 
-from courseware.models import StudentModule  # lint-amnesty, pylint: disable=import-error
-
 from django.core.exceptions import PermissionDenied  # lint-amnesty, pylint: disable=import-error
 from django.core.files import File  # lint-amnesty, pylint: disable=import-error
 from django.core.files.storage import default_storage  # lint-amnesty, pylint: disable=import-error
@@ -23,9 +21,7 @@ from django.template import Context, Template  # lint-amnesty, pylint: disable=i
 from django.utils.encoding import force_text  # pylint: disable=import-error
 from django.utils.translation import ugettext_lazy as _  # pylint: disable=import-error
 
-from student.models import user_by_anonymous_id  # lint-amnesty, pylint: disable=import-error
 from submissions import api as submissions_api  # lint-amnesty, pylint: disable=import-error
-from submissions.models import StudentItem as SubmissionsStudent  # lint-amnesty, pylint: disable=import-error
 
 from webob.response import Response
 
@@ -285,6 +281,9 @@ class StaffGradedAssignmentXBlock(XBlock):
             annotated file name, student id and module id, this
             information will be used on grading screen
             """
+            from courseware.models import StudentModule
+            from student.models import user_by_anonymous_id
+            from submissions.models import StudentItem as SubmissionsStudent
             # Submissions doesn't have API for this, just use model directly.
             students = SubmissionsStudent.objects.filter(
                 course_id=self.course_id,
@@ -442,6 +441,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Save annotated assignment from staff.
         """
+        from courseware.models import StudentModule
         require(self.is_course_staff())
         upload = request.params['annotated']
         module = StudentModule.objects.get(pk=request.params['module_id'])
@@ -514,6 +514,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Return annotated assignment file requested by staff.
         """
+        from courseware.models import StudentModule
         require(self.is_course_staff())
         module = StudentModule.objects.get(pk=request.params['module_id'])
         state = json.loads(module.state)
@@ -581,6 +582,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Persist a score for a student given by staff.
         """
+        from courseware.models import StudentModule
         require(self.is_course_staff())
         score = request.params.get('grade', None)
         module = StudentModule.objects.get(pk=request.params['module_id'])
@@ -626,6 +628,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Reset a students score request by staff.
         """
+        from courseware.models import StudentModule
         require(self.is_course_staff())
         student_id = request.params['student_id']
         submissions_api.reset_score(student_id, unicode(self.course_id), unicode(self.block_id))
