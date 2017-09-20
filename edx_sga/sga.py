@@ -21,8 +21,6 @@ from django.template import Context, Template  # lint-amnesty, pylint: disable=i
 from django.utils.encoding import force_text  # pylint: disable=import-error
 from django.utils.translation import ugettext_lazy as _  # pylint: disable=import-error
 
-from submissions import api as submissions_api  # lint-amnesty, pylint: disable=import-error
-
 from webob.response import Response
 
 from xblock.core import XBlock
@@ -170,6 +168,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Get student's most recent submission.
         """
+        from submissions import api as submissions_api
         submissions = submissions_api.get_submissions(
             self.student_submission_id(submission_id))
         if submissions:
@@ -181,6 +180,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Return student's current score.
         """
+        from submissions import api as submissions_api
         score = submissions_api.get_score(
             self.student_submission_id(submission_id)
         )
@@ -420,6 +420,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         """
         Save a students submission file.
         """
+        from submissions import api as submissions_api
         require(self.upload_allowed())
         upload = request.params['assignment']
         sha1 = _get_sha1(upload.file)
@@ -583,6 +584,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         Persist a score for a student given by staff.
         """
         from courseware.models import StudentModule
+        from submissions import api as submissions_api
         require(self.is_course_staff())
         score = request.params.get('grade', None)
         module = StudentModule.objects.get(pk=request.params['module_id'])
@@ -629,6 +631,7 @@ class StaffGradedAssignmentXBlock(XBlock):
         Reset a students score request by staff.
         """
         from courseware.models import StudentModule
+        from submissions import api as submissions_api
         require(self.is_course_staff())
         student_id = request.params['student_id']
         submissions_api.reset_score(student_id, unicode(self.course_id), unicode(self.block_id))
